@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-data_final = pd.read_csv("https://github.com/Joacco11/An-lisisRotaci-nEmpleados/blob/master/HR-Employee-Attrition.csv") #Leer el csv limpio asasasas
+data_final = pd.read_csv("https://github.com/Joacco11/An-lisisRotaci-nEmpleados/blob/master/HR-Employee-Attrition.csv")
 data_final.shape
 X = data_final.drop(columns=['TravelInsurance'])  
 y = data_final['TravelInsurance']
