@@ -9,13 +9,16 @@ import joblib
 from xgboost import XGBClassifier
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 
 
-data_final = pd.read_csv("https://github.com/Joacco11/An-lisisRotaci-nEmpleados/blob/master/HR-Employee-Attrition.csv")
-data_final.shape
-X = data_final.drop(columns=['TravelInsurance'])  
-y = data_final['TravelInsurance']
 
+data_final = pd.read_csv("C:\\Users\\User\\Desktop\\Sexto ciclo\\ProyectoIntegrador\\proyecto\\DesarrolloModelo\\data_final.csv")
+data_final.head
+X = data_final.drop(columns=['Attrition'])  
+y = data_final['Attrition']
+X.shape
+y.shape
 
 
 #Separación de la data
@@ -36,12 +39,12 @@ X_train, X_test, y_train, y_test = train_test_split(X, y,
 model = XGBClassifier(random_state=153468)
 # Definir los hiperparámetros a ajustar
 param_grid = {
-    'n_estimators': [100, 200, 300],
+    'n_estimators': [50, 100, 150],
     'learning_rate': [0.01, 0.1, 0.2],
-    'max_depth': [3, 4, 5, 6],
+    'max_depth': [3, 7, 5, 6],
     'min_child_weight': [1, 2, 3],
     'subsample': [0.6, 0.8, 1.0],
-    'colsample_bytree': [0.6, 0.8, 1.0],
+    'colsample_bytree': [0.6, 0.8, 0.9],
     'gamma': [0, 0.1, 0.2],
 }
 
@@ -63,8 +66,11 @@ best_xgboost_model = grid_search.best_estimator_
 y_pred = best_xgboost_model.predict(X_test)
 
 # Calcular y mostrar la precisión
-accuracy = accuracy_score(y_test, y_pred)
-print(f"Precisión: {accuracy}")
+cnf_matrix_xgb = confusion_matrix(y_test, y_pred)
+print("Matriz de Confusión (XGBoost):\n", cnf_matrix_xgb)
+
+# Imprimir el informe de clasificación
+print(classification_report(y_test, y_pred))
 # Guardar el modelo de XGBoost
 joblib.dump(best_xgboost_model, 'best_xgboost_model.joblib')
 predictions_df = pd.DataFrame({
@@ -97,7 +103,7 @@ best_rf_model = grid_search_rf.best_estimator_
 y_pred_rf = best_rf_model.predict(X_test)
 # Evaluación del modelo con la matriz de confusión
 cnf_matrix_rf = confusion_matrix(y_test, y_pred_rf)
-print("Matriz de Confusión:\n", cnf_matrix_rf)
+print("Matriz de Confusión (RandomForest):\n", cnf_matrix_rf)
 print(classification_report(y_test, y_pred_rf))
 
 fig, axes = plt.subplots(nrows=4, ncols=5, figsize=(10, 8), dpi=900)
@@ -125,7 +131,7 @@ predictions_df = pd.DataFrame({
 predictions_df.to_csv('predicciones_rf.csv', index=False)
 ##------------------------------------------------------------------------------------------------------------------------
 #Support Vector Classifier
-svc_model = SVC(random_state=100)
+svc_model = SVC(random_state=159)
 
 param_grid_svc = {
     'C': [0.1, 1, 10, 100],  # Parámetro de regularización
@@ -155,7 +161,8 @@ accuracy = accuracy_score(y_test, y_pred_svc)
 print(f"Precisión: {accuracy}")
 
 # Evaluación del modelo
-print("Matriz de Confusión:\n", confusion_matrix(y_test, y_pred_svc))
+cnf_matrix_svc = confusion_matrix(y_test, y_pred_svc)
+print("Matriz de Confusión (svc):\n", cnf_matrix_rf)
 print(classification_report(y_test, y_pred_svc))
 
 joblib.dump(best_svc_model, 'best_svc_model.joblib')
@@ -169,39 +176,34 @@ predictions_df.to_csv('predicciones_svc.csv', index=False)
 #-------------------------------------------------------------------------------------------
 # Evaluación de cada modelo
 
+# Diccionario para almacenar los resultados
+results = {}
+
+# Definir el diccionario de modelos y sus respectivas predicciones
 models = {
-    "XGBoost": best_xgboost_model,
-    "Random Forest": best_rf_model,
-    "SVC": best_svc_model
+    "XGBoost": (best_xgboost_model, y_pred),
+    "Random Forest": (best_rf_model, y_pred_rf),
+    "SVC": (best_svc_model, y_pred_svc)
 }
 
-# Almacenar resultados
-results = []
-
-for name, model in models.items():
-    # Predecir con el modelo
-    y_pred = model.predict(X_test)
+# Calcular las métricas para cada modelo
+for model_name, (model, predictions) in models.items():
+    # Calcular las métricas
+    accuracy = accuracy_score(y_test, predictions)
+    precision = precision_score(y_test, predictions)
+    recall = recall_score(y_test, predictions)
+    f1 = f1_score(y_test, predictions)
     
-    # Calcular métricas
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
-    
-    # Almacenar resultados
-    results.append({
-        "Modelo": name,
+    # Almacenar los resultados en el diccionario
+    results[model_name] = {
         "Precisión": precision,
         "Recall": recall,
         "F1-Score": f1,
-    })
+        "Exactitud": accuracy,
+    }
 
-# Crear un DataFrame para mostrar resultados
-results_df = pd.DataFrame(results)
+# Convertir los resultados en un DataFrame
+results_df = pd.DataFrame(results).T
 
-# Mostrar resultados
+# Mostrar el DataFrame con los resultados
 print(results_df)
-
-# Seleccionar el mejor modelo en base a F1-Score
-best_model = results_df.loc[results_df['F1-Score'].idxmax()]
-print(f"\nEl mejor modelo es: {best_model['Modelo']} con F1-Score de {best_model['F1-Score']}")
