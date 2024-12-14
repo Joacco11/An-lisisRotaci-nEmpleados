@@ -36,7 +36,6 @@ print("Variables numéricas:", num_var)
 print("Variables categóricas:", cat_var)
 print("Variables target:",y)
 
-
 # Crear un preprocesador
 preprocessor = ColumnTransformer(
     transformers=[
