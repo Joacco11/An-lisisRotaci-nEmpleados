@@ -207,3 +207,27 @@ results_df = pd.DataFrame(results).T
 
 # Mostrar el DataFrame con los resultados
 print(results_df)
+
+best_model_name = results_df['Exactitud'].idxmax()
+best_model_results = results_df.loc[best_model_name]
+
+print("\nEl modelo con la mayor exactitud es:")
+print(f"Modelo: {best_model_name}")
+print(best_model_results)
+
+##Exportar el modelo 
+best_model, _ = models[best_model_name]
+model_filename = f'best_{best_model_name.lower()}_model.joblib'
+joblib.dump(best_model, model_filename)
+print(f"\nEl modelo {best_model_name} ha sido guardado como '{model_filename}'.")
+
+# Guardar las predicciones en un archivo CSV
+predictions_df = pd.DataFrame({
+    'Predicciones': models[best_model_name][1],
+    'Verdadero': y_test  # Incluyendo los valores verdaderos para comparación
+})
+
+# Guardar las predicciones en un archivo CSV
+predictions_filename = f'predicciones_{best_model_name.lower()}.csv'
+predictions_df.to_csv(predictions_filename, index=False)
+print(f"Las predicciones del modelo {best_model_name} han sido guardadas como '{predictions_filename}'.")
