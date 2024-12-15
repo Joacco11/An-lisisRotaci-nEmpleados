@@ -1,49 +1,51 @@
 import pandas as pd
 import joblib
-from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
 from sklearn.compose import ColumnTransformer
-from sklearn.decomposition import PCA
-from sklearn.pipeline import Pipeline
-from sklearn.decomposition import PCA
 
-
+# Función para clasificar columnas en numéricas y categóricas
 def classify_columns(csv_path):
-    # Cargar el archivo CSV
+
     data = pd.read_csv(csv_path) 
-    # Identificar variables numéricas y categóricas
     numeric_columns = data.select_dtypes(include=['number']).columns.tolist()
     categorical_columns = data.select_dtypes(exclude=['number']).columns.tolist()
-
     return data, numeric_columns, categorical_columns
 
-csv_path = "C:\\Users\\User\\Desktop\\Sexto ciclo\\ProyectoIntegrador\\proyecto\\DesarrolloModelo\\HR-Employee-Attrition.csv"
-df, numerics, categoricals = classify_columns(csv_path)
+# Ruta del archivo CSV
+csv_path = "https://raw.githubusercontent.com/Joacco11/An-lisisRotaci-nEmpleados/refs/heads/master/HR-Employee-Attrition.csv"
 
+# Cargar y clasificar columnas
+new_data, numerics, categoricals = classify_columns(csv_path)
 
-num_var = ["Age", "AnnualIncome", "FamilyMembers", "ChronicDiseases"]
-cat_var = ["Employment Type", "GraduateOrNot", "FrequentFlyer", "EverTravelledAbroad"]
+# Remover la columna 'Attrition' de las categóricas, si aplica
+if 'Attrition' in categoricals:
+    categoricals.remove('Attrition')
 
-ohe_columns = loaded_transformer.named_transformers_['cat'].get_feature_names_out(cat_var)
-column_names = num_var + ohe_columns.tolist()
+# Cargar el transformador y el modelo PCA desde los archivos guardados
+loaded_transformer = joblib.load(r'C:/Users/User/Desktop/Sexto ciclo/ProyectoIntegrador/proyecto/DesarrolloModelo/data_transformer.pkl')
+pca_model = joblib.load(r'C:/Users/User/Desktop/Sexto ciclo/ProyectoIntegrador/proyecto/DesarrolloModelo/pca_model.pkl')
 
-#Importar nueva data
-loaded_transformer = joblib.load('data_transformer.pkl')
+# Obtener los nombres de las columnas después de OneHotEncoder
+ohe_columns = loaded_transformer.named_transformers_['cat'].get_feature_names_out(categoricals)
+column_names = numerics + ohe_columns.tolist()
+
+# Transformar la nueva data utilizando el transformador cargado
 new_data_transformed = loaded_transformer.transform(new_data)
-new_data_final = pd.DataFrame(new_data_transformed, columns=column_names)
-print(new_data_final.head())
+new_data_transformed.shape
+# Reducir la dimensionalidad con el modelo PCA
+new_data_pca = pca_model.transform(new_data_transformed)
 
+# Cargar el modelo XGBoost guardado
+best_svc_model = joblib.load(r'C:/Users/User/Desktop/Sexto ciclo/ProyectoIntegrador/proyecto/DesarrolloModelo/best_svc_model.joblib')
+# Realizar predicciones con los datos transformados
+predicciones = best_svc_model.predict(new_data_transformed)
 
-best_xgboost_model = joblib.load('best_xgboost_model.joblib')
-
-# Realizar la predicción con la data transformada y reducida por PCA
-predicciones = best_xgboost_model.predict(new_data_final)
-
-# Presentar solo la predicción
+# Crear un DataFrame con las predicciones
 pred_df = pd.DataFrame(predicciones, columns=['Predicción'])
+
+# Mostrar las predicciones
 print("Predicciones realizadas:")
-print(pred_df)
+print(pred_df.head())
 
-# Si deseas guardar las predicciones en un archivo CSV
-pred_df.to_csv('predicciones_despliegue_xgboost.csv', index=False)
-print("Predicciones guardadas en 'PREDICCIÓNFINAL_predicciones_despliegue_xgboost.csv'")
-
+# Guardar las predicciones en un archivo CSV
+pred_df.to_csv('predicciones_despliegue_svc.csv', index=False)
+print("Predicciones guardadas en 'predicciones_despliegue_svc.csv'")
